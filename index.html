@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Andalucía">
+<title>Andalucía Planner</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sand:#F5EDD8;--tc:#C4622D;--tcd:#8B3E19;--tcl:#F0C4A8;--olive:#5C6B2C;--olivl:#E8EDDA;
+  --night:#1A1410;--text:#2C1F14;--muted:#8A7060;--border:rgba(44,31,20,0.12);
+  --white:#FEFCF8;--gold:#C4922D;--goldl:#F7EDCC;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--sand);color:var(--text);font-size:14px;min-height:100vh}
+.hdr{background:var(--night);padding:0 16px;display:flex;align-items:center;gap:12px;height:52px;border-bottom:1px solid rgba(196,98,45,0.3);flex-wrap:wrap}
+.brand{font-family:'Playfair Display',serif;font-size:16px;color:var(--tcl);font-weight:600;white-space:nowrap}
+.csw{display:flex;gap:3px;background:rgba(255,255,255,0.06);padding:3px;border-radius:7px;border:1px solid rgba(255,255,255,0.1)}
+.cbtn{padding:4px 14px;border:none;border-radius:5px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;background:transparent;color:rgba(255,255,255,0.45);transition:all .2s}
+.cbtn.active{background:var(--tc);color:white}
+.srch{flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:0 10px;gap:6px;max-width:260px}
+.srch input{background:none;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:12px;color:white;width:100%;padding:6px 0}
+.srch input::placeholder{color:rgba(255,255,255,0.3)}
+.hnav{display:flex;gap:3px;margin-left:auto;flex-wrap:wrap}
+.nbtn{padding:4px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:5px;background:transparent;color:rgba(255,255,255,0.45);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.nbtn:hover,.nbtn.active{color:white;border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.08)}
+.body{display:flex;height:calc(100vh - 52px);overflow:hidden}
+.sidebar{width:200px;background:var(--white);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:14px 10px}
+.fl{font-size:10px;font-weight:500;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;padding-left:3px}
+.fc{display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--text);transition:all .15s;margin-bottom:2px}
+.fc:hover{background:var(--sand)}
+.fc.active{background:var(--tcl);color:var(--tcd);font-weight:500}
+.cd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cc{margin-left:auto;font-size:10px;color:var(--muted)}
+.tr{display:flex;align-items:center;justify-content:space-between;padding:4px 3px;font-size:12px;color:var(--text);margin-bottom:2px}
+.tgl{width:26px;height:15px;border-radius:8px;background:#ddd;position:relative;cursor:pointer;border:none;flex-shrink:0;transition:background .2s}
+.tgl.on{background:var(--tc)}
+.tgl::after{content:'';width:11px;height:11px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .2s}
+.tgl.on::after{left:13px}
+.fs{margin-bottom:18px}
+.main{flex:1;overflow-y:auto;background:var(--sand)}
+.va{padding:18px 20px}
+.shdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.stit{font-family:'Playfair Display',serif;font-size:18px;font-weight:600}
+.scnt{font-size:11px;color:var(--muted);background:rgba(0,0,0,0.05);padding:2px 9px;border-radius:20px}
+.vt{display:flex;gap:3px}
+.vtb{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s}
+.vtb.active{background:var(--tc);border-color:var(--tc);color:white}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.pc{background:var(--white);border-radius:11px;border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:all .2s}
+.pc:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(44,31,20,0.1);border-color:var(--tcl)}
+.ci{height:100px;display:flex;align-items:center;justify-content:center;font-size:36px}
+.cb{padding:10px 12px 12px}
+.ccat{font-size:10px;letter-spacing:.5px;text-transform:uppercase;font-weight:500;margin-bottom:3px}
+.cnm{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;margin-bottom:5px;line-height:1.3}
+.cdsc{font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:9px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cmeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tag{padding:2px 7px;border-radius:3px;font-size:10px;font-weight:500}
+.tp{background:var(--goldl);color:var(--gold)}
+.tg{background:#E8F4E8;color:#3A7D44}
+.td{background:var(--olivl);color:var(--olive)}
+.fb{margin-left:auto;background:none;border:none;cursor:pointer;font-size:15px;transition:transform .15s}
+.fb:hover{transform:scale(1.2)}
+.li{background:var(--white);border-radius:9px;border:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;transition:all .15s;margin-bottom:7px}
+.li:hover{border-color:var(--tcl);background:var(--sand)}
+.le{font-size:24px}
+.lc{flex:1;min-width:0}
+.ln{font-family:'Playfair Display',serif;font-size:13px;font-weight:600;margin-bottom:2px}
+.ld{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lm{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+#leaflet-map{height:420px;border-radius:11px;overflow:hidden;border:1px solid var(--border)}
+.dp{max-width:640px}
+.dbk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tc);cursor:pointer;margin-bottom:16px;font-weight:500}
+.dhero{background:var(--white);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
+.dhi{height:160px;display:flex;align-items:center;justify-content:center;font-size:64px}
+.dhb{padding:16px 20px}
+.dtit{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:5px}
+.dtags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.ddsc{font-size:13px;line-height:1.7;margin-bottom:14px}
+.dgrd{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.df{background:var(--sand);border-radius:7px;padding:8px 10px}
+.dfl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px;font-weight:500}
+.dfv{font-size:12px;font-weight:500}
+.srcl{margin-top:12px}
+.si{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px}
+.sb{padding:2px 6px;border-radius:3px;font-size:10px;font-weight:500;white-space:nowrap}
+.conf{margin-left:auto;font-size:10px;color:var(--muted)}
+.cfb{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-top:10px}
+.cft{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.cff{height:100%;background:var(--tc);border-radius:2px}
+.bkrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.bkbtn{padding:6px 14px;border-radius:7px;border:1px solid;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:500;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.bkbtn.primary{background:var(--tc);border-color:var(--tc);color:white}
+.bkbtn.ghost{background:var(--white);border-color:var(--border);color:var(--text)}
+.bkbtn.ghost:hover{border-color:var(--tc);color:var(--tc)}
+.iday{background:var(--white);border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
+.idh{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--tc);color:white}
+.idn{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.idtit{font-family:'Playfair Display',serif;font-size:14px;font-weight:600}
+.idthm{font-size:11px;opacity:.75;margin-top:1px}
+.hbdg{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:3px;font-size:10px;margin-left:auto}
+.hw{background:#FFF3CD;color:#856404}
+.hok{background:var(--olivl);color:var(--olive)}
+.idb{padding:14px 16px}
+.ti{display:flex;gap:12px;padding-bottom:13px;position:relative}
+.ti::before{content:'';position:absolute;left:54px;top:24px;bottom:0;width:1px;background:var(--border)}
+.ti:last-child::before{display:none}
+.ttm{font-size:10px;color:var(--muted);font-weight:500;min-width:36px;padding-top:2px;text-align:right}
+.tdot{width:9px;height:9px;border-radius:50%;background:var(--tc);margin-top:4px;flex-shrink:0;border:2px solid var(--white);box-shadow:0 0 0 1px var(--tc)}
+.tc2{flex:1}
+.tn{font-weight:500;font-size:13px;margin-bottom:1px}
+.tnt{font-size:11px;color:var(--muted);line-height:1.4}
+.dnd-zone{min-height:60px;background:var(--sand);border-radius:8px;border:1.5px dashed rgba(196,98,45,0.3);padding:8px;margin:14px 0;position:relative}
+.dnd-zone-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:var(--muted);pointer-events:none;white-space:nowrap}
+.dnd-item{background:var(--white);border:1px solid var(--border);border-radius:7px;padding:7px 10px;margin-bottom:5px;cursor:grab;display:flex;align-items:center;gap:8px;font-size:12px;user-select:none;transition:all .15s}
+.dnd-item:hover{border-color:var(--tcl);background:#FFF9F5}
+.dnd-handle{color:var(--muted);font-size:14px;cursor:grab}
+.dnd-name{flex:1;font-weight:500}
+.dnd-remove{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px}
+.dnd-remove:hover{color:#C4622D}
+.dnd-add-row{display:flex;gap:6px;flex-wrap:wrap}
+.add-chip{padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--white);font-size:11px;cursor:pointer;transition:all .15s;color:var(--text)}
+.add-chip:hover{background:var(--tcl);border-color:var(--tc);color:var(--tcd)}
+.wx-card{background:var(--white);border-radius:11px;border:1px solid var(--border);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.wx-main{display:flex;align-items:center;gap:10px}
+.wx-icon{font-size:32px}
+.wx-temp{font-family:'Playfair Display',serif;font-size:28px;font-weight:600}
+.wx-desc{font-size:12px;color:var(--muted)}
+.wx-grid{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+.wx-item{text-align:center}
+.wx-val{font-size:15px;font-weight:500}
+.wx-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.wx-warn{background:#FFF3CD;border:1px solid #F0C040;border-radius:7px;padding:6px 12px;font-size:12px;color:#856404;margin-top:8px;width:100%}
+.scraper-panel{background:var(--night);border-radius:11px;padding:18px 20px;margin-bottom:14px}
+.sp-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--tcl);margin-bottom:6px}
+.sp-desc{font-size:11px;color:rgba(255,255,255,.45);margin-bottom:14px;line-height:1.5}
+.src-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.src-url{font-size:11px;color:rgba(255,255,255,.5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-type{padding:2px 6px;border-radius:3px;font-size:10px;font-weight:500}
+.src-btn{padding:3px 10px;border-radius:4px;border:1px solid rgba(196,98,45,.5);background:transparent;color:rgba(196,98,45,.9);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.src-btn:hover{background:rgba(196,98,45,.15)}
+.prog-bar{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:var(--tc);transition:width .5s}
+.dupe-card{background:var(--white);border-radius:10px;border:2px solid #F0C040;padding:14px 16px;margin-bottom:10px}
+.dupe-score{font-size:20px;font-weight:600;color:var(--tc)}
+.pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ptc{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:11px 13px;cursor:pointer;transition:all .2s}
+.ptc:hover{background:rgba(196,98,45,.22);border-color:rgba(196,98,45,.4)}
+.pti{font-size:16px;margin-bottom:5px}
+.ptt{font-size:12px;font-weight:500;color:white;margin-bottom:2px}
+.ptd{font-size:10px;color:rgba(255,255,255,.4);line-height:1.4}
+.empty{text-align:center;padding:50px 20px;color:var(--muted);font-size:13px}
+.ei{font-size:32px;margin-bottom:10px}
+.msel{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.mchip{padding:3px 10px;border-radius:4px;border:1px solid var(--border);background:var(--white);font-size:11px;cursor:pointer;transition:all .15s}
+.mchip.active{background:var(--tc);border-color:var(--tc);color:white}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(44,31,20,.15);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="hdr">
+  <div class="brand">✦ Andalucía</div>
+  <div class="csw">
+    <button class="cbtn active" onclick="switchCity('Granada')">Granada</button>
+    <button class="cbtn" onclick="switchCity('Sevilla')">Sevilla</button>
+  </div>
+  <div class="srch"><span style="color:rgba(255,255,255,.3);font-size:13px">⌕</span><input type="text" id="sinput" placeholder="Suchen..." oninput="handleSearch(this.value)"></div>
+  <div class="hnav">
+    <button class="nbtn active" onclick="nav('explore')" id="n-explore">Entdecken</button>
+    <button class="nbtn" onclick="nav('map')" id="n-map">Karte</button>
+    <button class="nbtn" onclick="nav('planner')" id="n-planner">Tagesplaner</button>
+    <button class="nbtn" onclick="nav('weather')" id="n-weather">Wetter</button>
+    <button class="nbtn" onclick="nav('itinerary')" id="n-itinerary">Itinerary</button>
+    <button class="nbtn" onclick="nav('scraper')" id="n-scraper">Quellen</button>
+    <button class="nbtn" onclick="nav('dupes')" id="n-dupes">Duplikate</button>
+    <button class="nbtn" onclick="nav('prompt')" id="n-prompt">Prompts</button>
+    <button class="nbtn" onclick="nav('favorites')" id="n-favorites">♥ Fav</button>
+  </div>
+</div>
+<div class="body">
+<div class="sidebar">
+  <div class="fs">
+    <div class="fl">Kategorie</div>
+    <div class="fc active" onclick="setCat('all')" id="cat-all"><span class="cd" style="background:#888"></span>Alle<span class="cc" id="cnt-all">—</span></div>
+    <div class="fc" onclick="setCat('sehenswürdigkeit')" id="cat-sehenswürdigkeit"><span class="cd" style="background:#C4622D"></span>Sehensw.<span class="cc" id="cnt-sehensw">—</span></div>
+    <div class="fc" onclick="setCat('restaurant')" id="cat-restaurant"><span class="cd" style="background:#C4922D"></span>Restaurants<span class="cc" id="cnt-rest">—</span></div>
+    <div class="fc" onclick="setCat('hotel')" id="cat-hotel"><span class="cd" style="background:#5C6B2C"></span>Hotels<span class="cc" id="cnt-hotel">—</span></div>
+    <div class="fc" onclick="setCat('aktivität')" id="cat-aktivität"><span class="cd" style="background:#2C6B5C"></span>Aktivitäten<span class="cc" id="cnt-akt">—</span></div>
+    <div class="fc" onclick="setCat('hidden_gem')" id="cat-hidden_gem"><span class="cd" style="background:#6B2C5C"></span>Hidden Gems<span class="cc" id="cnt-gem">—</span></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Viertel</div>
+    <div id="district-list"></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Eigenschaften</div>
+    <div class="tr"><span>Nur Gems</span><button class="tgl" id="tg-gem" onclick="tgl('gem')"></button></div>
+    <div class="tr"><span>Familie</span><button class="tgl" id="tg-family" onclick="tgl('family')"></button></div>
+    <div class="tr"><span>Abends</span><button class="tgl" id="tg-evening" onclick="tgl('evening')"></button></div>
+    <div class="tr"><span>Indoor</span><button class="tgl" id="tg-indoor" onclick="tgl('indoor')"></button></div>
+    <div class="tr"><span>Outdoor</span><button class="tgl" id="tg-outdoor" onclick="tgl('outdoor')"></button></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Preis</div>
+    <div class="fc" onclick="setPrice('kostenlos')" id="p-kos">Kostenlos</div>
+    <div class="fc" onclick="setPrice('€')" id="p-e">€ Budget</div>
+    <div class="fc" onclick="setPrice('€€')" id="p-ee">€€ Mittel</div>
+    <div class="fc" onclick="setPrice('€€€')" id="p-eee">€€€ Premium</div>
+  </div>
+</div>
+<div class="main" id="main"></div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const DATA = {
+  Granada:[
+    {id:"gr1",name:"Alhambra & Generalife",city:"Granada",district:"Alhambra Hill",category:"sehenswürdigkeit",tags:["must-see","outdoor","history","indoor"],short:"Maurischer Palastkomplex 13.–14. Jh. — UNESCO Weltkulturerbe.",long:"Die Alhambra ist eines der bedeutendsten islamischen Bauwerke Europas. Der Komplex umfasst Nasridenpalast, Alcazaba und Generalife-Gärten. Frühbuchung zwingend notwendig. Morgenstunden oder Abendtickets bieten das beste Erlebnis.",price:"€€",duration:"4–6h",hours:"8:30–20:00 (Sommer)",booking:true,best:"Morgens/Abend",gem:false,family:true,evening:false,indoor:true,outdoor:true,lat:37.1760,lng:-3.5881,url:"https://www.alhambra-patronato.es",booking_urls:[{label:"Offiziell buchen",url:"https://www.alhambra-patronato.es",type:"primary"},{label:"GetYourGuide",url:"https://www.getyourguide.com/de-ch/granada-l207/",type:"ghost"}],sources:[{type:"official venue",url:"https://www.alhambra-patronato.es",conf:0.98},{type:"booking platform",url:"https://www.getyourguide.com/de-ch/granada-l207/",conf:0.92}],conf:0.98,note:"Tickets Monate im Voraus buchen!",emoji:"🏰"},
+    {id:"gr2",name:"Albaicín-Viertel",city:"Granada",district:"Albaicín",category:"sehenswürdigkeit",tags:["outdoor","history","viewpoint","walking"],short:"Maurisches Altstadtviertel — Mirador San Nicolás mit Alhambra-Blick.",long:"Das Albaicín ist Granadas ältestes Viertel und UNESCO-Weltkulturerbe. Verwickelte Gassen führen zum Mirador San Nicolás — bester Aussichtspunkt auf Alhambra und Sierra Nevada.",price:"kostenlos",duration:"2–3h",hours:"Öffentlich",booking:false,best:"Sonnenuntergang",gem:false,family:true,evening:true,indoor:false,outdoor:true,lat:37.1802,lng:-3.5927,url:"https://reisen-nach-spanien.com",booking_urls:[{label:"Geführte Tour",url:"https://www.getyourguide.com/de-ch/granada-l207/",type:"ghost"}],sources:[{type:"editorial travel guide",url:"https://worldonabudget.de/granada-sehenswuerdigkeiten/",conf:0.90}],conf:0.93,note:"Taschendiebe in der Hauptsaison.",emoji:"🌅"},
+    {id:"gr3",name:"Sacromonte-Höhlenwohnungen",city:"Granada",district:"Sacromonte",category:"hidden_gem",tags:["evening","culture","flamenco","outdoor"],short:"Authentische Gitano-Höhlensiedlung — Wiege des Andalusischen Flamenco.",long:"Sacromonte liegt hinter dem Albaicín an einem Hügelrücken mit in Fels gehauenen Höhlenwohnungen. Gitano-Familien bieten private Flamenco-Shows (Zambras) in echten Höhlenräumen.",price:"kostenlos",duration:"1–2h",hours:"Öffentl.; Shows abends",booking:false,best:"Abend",gem:true,family:false,evening:true,indoor:false,outdoor:true,lat:37.1818,lng:-3.5839,url:"https://travelsaroundspain.com/granada-hidden-gems/",booking_urls:[{label:"Flamenco-Show buchen",url:"https://www.getyourguide.com/de-ch/granada-l207/",type:"ghost"}],sources:[{type:"editorial travel guide",url:"https://travelsaroundspain.com/granada-hidden-gems/",conf:0.87}],conf:0.87,note:"Abends stark empfohlen.",emoji:"🎸"},
+    {id:"gr4",name:"Catedral de Granada",city:"Granada",district:"Centro",category:"sehenswürdigkeit",tags:["indoor","history","architecture"],short:"Erste Renaissancekathedrale Spaniens — Grabstätte der Katholischen Könige.",long:"Begann 1523 im gotischen Stil, wurde zur ersten Renaissancekathedrale Spaniens. Capilla Real beherbergt die Grabmäler von Ferdinand und Isabella.",price:"€",duration:"1–2h",hours:"Mo–Sa 10–18:30",booking:false,best:"Vormittag",gem:false,family:true,evening:false,indoor:true,outdoor:false,lat:37.1761,lng:-3.5993,url:"https://www.catedraldegranada.com",booking_urls:[{label:"Ticketshop",url:"https://www.catedraldegranada.com",type:"primary"}],sources:[{type:"official venue",url:"https://www.catedraldegranada.com",conf:0.97}],conf:0.95,note:"Kombiniere mit Capilla Real.",emoji:"⛪"},
+    {id:"gr5",name:"El Bar de Eric",city:"Granada",district:"Realejo",category:"hidden_gem",tags:["evening","local","tapas","indoor"],short:"Legendäre Steh-Bar im Realejo — kostenlose Tapas zu jedem Getränk.",long:"Granada ist weltberühmt für seine Tapa-Tradition. El Bar de Eric im Realejo ist ein Einheimischen-Geheimtipp. Rustikale Atmosphäre, grosszügige Tapas.",price:"€",duration:"1h",hours:"Di–So 12–16, 20–24",booking:false,best:"Abend",gem:true,family:false,evening:true,indoor:true,outdoor:false,lat:37.1736,lng:-3.5998,url:"https://secretattractions.com/secret-dining-spots-in-granada/",booking_urls:[],sources:[{type:"editorial travel guide",url:"https://secretattractions.com/secret-dining-spots-in-granada/",conf:0.75}],conf:0.75,note:"Keine Webpräsenz — Adresse vor Ort erfragen.",emoji:"🍺"},
+    {id:"gr6",name:"Ruta del Azafrán",city:"Granada",district:"Albaicín",category:"restaurant",tags:["views","dinner","local","indoor","evening"],short:"Gehobenes Restaurant mit Alhambra-Blick — andalusisch-marokkanische Küche.",long:"Direkt neben dem Mirador San Nicolás. Alhambra-Blick bei Nacht unvergleichlich. Reservierung zwingend für Abendessen.",price:"€€€",duration:"2h",hours:"Di–So 13–16, 20–23",booking:true,best:"Abend",gem:false,family:false,evening:true,indoor:true,outdoor:true,lat:37.1796,lng:-3.5928,url:"https://www.rutadelazafran.es",booking_urls:[{label:"Tisch reservieren",url:"https://www.rutadelazafran.es",type:"primary"}],sources:[{type:"restaurant guide",url:"https://andalucialovers.com",conf:0.83}],conf:0.83,note:"Tisch zum Alhambra-Blick beim Buchen anfragen.",emoji:"🍽️"},
+    {id:"gr7",name:"Palacio de Santa Paula",city:"Granada",district:"Centro",category:"hotel",tags:["boutique","historic","luxury","indoor"],short:"5-Sterne-Boutiquehotel im restaurierten Kloster aus dem 16. Jh.",long:"Vereint gotisches Kloster, maurische Moschee und arabische Fassade. Kreuzgang-Zimmer, Restaurant und Spa.",price:"€€€",duration:"Unterkunft",hours:"24h",booking:true,best:"—",gem:false,family:false,evening:false,indoor:true,outdoor:false,lat:37.1769,lng:-3.5997,url:"https://www.marriott.com",booking_urls:[{label:"Zimmer buchen",url:"https://www.marriott.com",type:"primary"}],sources:[{type:"hotel platform",url:"https://andalucialovers.com",conf:0.84}],conf:0.84,note:"Frühzeitig buchen.",emoji:"🏨"},
+    {id:"gr8",name:"Bañuelo Arab Baths",city:"Granada",district:"Albaicín",category:"hidden_gem",tags:["history","indoor","culture"],short:"Älteste Hamam-Anlage Spaniens aus dem 11. Jh. — kaum bekannter Geheimtipp.",long:"Best erhaltene arabische Badanlage aus der Zirid-Periode. Sternförmige Dachöffnungen lassen magisches Licht einfallen.",price:"€",duration:"30–45 Min",hours:"Di–Sa 10–14, 17–20",booking:false,best:"Vormittag",gem:true,family:true,evening:false,indoor:true,outdoor:false,lat:37.1782,lng:-3.5921,url:"https://travelsaroundspain.com/granada-hidden-gems/",booking_urls:[],sources:[{type:"editorial travel guide",url:"https://travelsaroundspain.com/granada-hidden-gems/",conf:0.88}],conf:0.88,note:"Perfekte Kombination mit Alhambra-Besuch.",emoji:"♨️"}
+  ],
+  Sevilla:[
+    {id:"sv1",name:"Real Alcázar",city:"Sevilla",district:"Santa Cruz",category:"sehenswürdigkeit",tags:["must-see","indoor","outdoor","history"],short:"Ältester bewohnter Königspalast Europas — Mudéjar-Meisterwerk und UNESCO-Erbe.",long:"Pedro I. liess ihn 1364 von maurischen Handwerkern erbauen. Terrassengärten mit Orangenhainen und Brunnen. Game of Thrones wurde teilweise hier gedreht.",price:"€€",duration:"3–4h",hours:"9:30–19:00 (Sommer)",booking:true,best:"Morgens",gem:false,family:true,evening:false,indoor:true,outdoor:true,lat:37.3838,lng:-5.9907,url:"https://www.alcazarsevilla.org",booking_urls:[{label:"Online buchen",url:"https://www.alcazarsevilla.org",type:"primary"}],sources:[{type:"official venue",url:"https://www.alcazarsevilla.org",conf:0.98}],conf:0.98,note:"Lange Warteschlange ohne Ticket.",emoji:"🏯"},
+    {id:"sv2",name:"Barrio de Triana",city:"Sevilla",district:"Triana",category:"sehenswürdigkeit",tags:["outdoor","local","evening","flamenco"],short:"Töpfer- und Flamenco-Viertel — authentisches Sevilla jenseits des Guadalquivir.",long:"Ursprünglich von Fischern, Töpfern und Gitanos bewohnt. Mercado de Triana, Calle Betis für Tapas mit Flussblick.",price:"kostenlos",duration:"2–3h",hours:"Öffentlich",booking:false,best:"Nachmittag/Abend",gem:false,family:true,evening:true,indoor:false,outdoor:true,lat:37.3842,lng:-6.0056,url:"https://ferndurst.de/sevilla-geheimtipps-reisebericht/",booking_urls:[],sources:[{type:"editorial travel guide",url:"https://ferndurst.de/sevilla-geheimtipps-reisebericht/",conf:0.88}],conf:0.88,note:"Calle Betis abends für Tapas und Flussblick.",emoji:"🌊"},
+    {id:"sv3",name:"Bodega Santa Cruz",city:"Sevilla",district:"Santa Cruz",category:"hidden_gem",tags:["tapas","local","evening","indoor"],short:"Legendäre Steh-Bar in Santa Cruz — Einheimischen-Klassiker seit Jahrzehnten.",long:"Handgeschriebene Tapas-Zettel wechseln täglich. Soldaditos de Pavía unbedingt probieren. Keine Sitzplätze.",price:"€",duration:"1h",hours:"Mo–So 8–01",booking:false,best:"Abend",gem:true,family:false,evening:true,indoor:true,outdoor:false,lat:37.3848,lng:-5.9913,url:"https://spanishsabores.com/eating-in-seville/",booking_urls:[],sources:[{type:"editorial travel guide",url:"https://spanishsabores.com/eating-in-seville/",conf:0.91}],conf:0.91,note:"Cash only. Ab 20:30 Uhr am lebendigsten.",emoji:"🍻"},
+    {id:"sv4",name:"Metropol Parasol (Las Setas)",city:"Sevilla",district:"La Encarnación",category:"sehenswürdigkeit",tags:["modern","architecture","views","outdoor","evening"],short:"Grösste Holzkonstruktion der Welt — Panoramaweg mit 360°-Stadtblick.",long:"Jürgen Mayer H., 2011. Panoramaweg mit Stadtblick. Untergeschoss zeigt römische und maurische Ausgrabungen.",price:"€",duration:"1–2h",hours:"9:30–23:00 (Mo–Fr)",booking:false,best:"Sonnenuntergang",gem:false,family:true,evening:true,indoor:false,outdoor:true,lat:37.3928,lng:-5.9920,url:"https://www.setasdesevilla.com",booking_urls:[{label:"Tickets online",url:"https://www.setasdesevilla.com",type:"primary"}],sources:[{type:"editorial travel guide",url:"https://www.travellers-insight.com",conf:0.89}],conf:0.89,note:"Goldene Stunde bei Sonnenuntergang.",emoji:"🍄"},
+    {id:"sv5",name:"El Rinconcillo",city:"Sevilla",district:"La Macarena",category:"restaurant",tags:["oldest","history","tapas","indoor","evening"],short:"Älteste Tapas-Bar Spaniens (gegr. 1670) — Kreide-Rechnung, jahrhundertelange Atmosphäre.",long:"Gegründet 1670, Kreideabrechnung auf dem Holztresen. Espinacas con Garbanzos und lokale Weine.",price:"€€",duration:"1.5h",hours:"Mo–So 13–02",booking:false,best:"Abend",gem:false,family:true,evening:true,indoor:true,outdoor:false,lat:37.3951,lng:-5.9923,url:"https://www.elrinconcillo.es",booking_urls:[{label:"Webseite",url:"https://www.elrinconcillo.es",type:"ghost"}],sources:[{type:"restaurant guide",url:"https://andalucialovers.com",conf:0.92}],conf:0.92,note:"Kein Kreditkartengerät — Cash mitbringen.",emoji:"📜"},
+    {id:"sv6",name:"EME Catedral Hotel",city:"Sevilla",district:"Santa Cruz",category:"hotel",tags:["boutique","design","views","luxury"],short:"Design-Boutiquehotel mit Dachterrassenbar direkt neben der Kathedrale.",long:"60 einzigartig gestaltete Zimmer. Dachterrassenbar mit Giralda-Blick.",price:"€€€",duration:"Unterkunft",hours:"24h",booking:true,best:"—",gem:false,family:false,evening:false,indoor:true,outdoor:true,lat:37.3862,lng:-5.9932,url:"https://www.emecatedralhotel.com",booking_urls:[{label:"Zimmer buchen",url:"https://www.emecatedralhotel.com",type:"primary"}],sources:[{type:"hotel guide",url:"https://thebetterbeyond.com/boutique-hotel-seville/",conf:0.88}],conf:0.88,note:"Dachbar auch ohne Übernachtung besuchen.",emoji:"🌇"},
+    {id:"sv7",name:"Mercado de Triana",city:"Sevilla",district:"Triana",category:"aktivität",tags:["food","local","indoor","morning","family"],short:"Traditioneller Frischmarkt auf den Fundamenten des historischen Inquisitionsgefängnisses.",long:"Frühstück unter Einheimischen. Castillo de San Jorge Ausgrabungen gratis im Untergeschoss.",price:"€",duration:"1–2h",hours:"Mo–Sa 9–15",booking:false,best:"Morgens",gem:false,family:true,evening:false,indoor:true,outdoor:false,lat:37.3822,lng:-6.0018,url:"https://www.mercadotriana.com",booking_urls:[],sources:[{type:"editorial travel guide",url:"https://ferndurst.de/sevilla-geheimtipps-reisebericht/",conf:0.86}],conf:0.86,note:"Inkl. gratis Inquisitions-Ausgrabungen.",emoji:"🥕"},
+    {id:"sv8",name:"Callejón del Agua",city:"Sevilla",district:"Santa Cruz",category:"hidden_gem",tags:["outdoor","hidden","romantic","walking","evening"],short:"Versteckte begrünte Gasse hinter den Alcázar-Mauern — kaum bekannt.",long:"Verläuft entlang der Alcázar-Mauern. Überwachsen mit Pflanzen, charmante Innenhöfe.",price:"kostenlos",duration:"30 Min",hours:"Immer",booking:false,best:"Morgens/Abend",gem:true,family:true,evening:true,indoor:false,outdoor:true,lat:37.3843,lng:-5.9902,url:"https://www.travellers-insight.com",booking_urls:[],sources:[{type:"editorial travel guide",url:"https://www.travellers-insight.com",conf:0.82}],conf:0.82,note:"Perfekter Startpunkt: San Bartolomé am Ende.",emoji:"🌿"}
+  ]
+};
+
+const WEATHER={Granada:{Jan:{icon:"🌤",temp:9,rain:50,humidity:65,wind:15,uv:2,tip:"Angenehm kühl — ideal für Alhambra ohne Gedränge.",warn:false},Feb:{icon:"🌥",temp:11,rain:55,humidity:62,wind:16,uv:3,tip:"Wenig Touristen, gelegentlicher Regen.",warn:false},Mär:{icon:"⛅",temp:14,rain:45,humidity:58,wind:14,uv:4,tip:"Frühling beginnt — Mandeln blühen.",warn:false},Apr:{icon:"🌸",temp:17,rain:40,humidity:55,wind:13,uv:5,tip:"Perfekte Wanderbedingungen im Albaicín.",warn:false},Mai:{icon:"☀",temp:21,rain:25,humidity:48,wind:12,uv:7,tip:"Hauptsaison beginnt — früh buchen.",warn:false},Jun:{icon:"☀",temp:27,rain:10,humidity:38,wind:10,uv:9,tip:"Heiss — Siesta 14–17 Uhr einplanen.",warn:true},Jul:{icon:"🔥",temp:33,rain:2,humidity:28,wind:9,uv:11,tip:"Sehr heiss — Outdoor nur morgens.",warn:true},Aug:{icon:"🔥",temp:33,rain:3,humidity:29,wind:9,uv:10,tip:"Hochsommer — Abendtickets bevorzugen.",warn:true},Sep:{icon:"☀",temp:27,rain:15,humidity:40,wind:10,uv:8,tip:"Noch warm, weniger Gedränge.",warn:false},Okt:{icon:"⛅",temp:20,rain:35,humidity:52,wind:12,uv:5,tip:"Goldener Herbst — bester Monat.",warn:false},Nov:{icon:"🌦",temp:13,rain:50,humidity:63,wind:15,uv:3,tip:"Ruhige Saison, gute Preise.",warn:false},Dez:{icon:"🌧",temp:9,rain:60,humidity:70,wind:17,uv:2,tip:"Weihnachtliche Atmosphäre.",warn:false}},Sevilla:{Jan:{icon:"🌤",temp:12,rain:55,humidity:68,wind:14,uv:2,tip:"Mild und angenehm.",warn:false},Feb:{icon:"⛅",temp:14,rain:50,humidity:65,wind:15,uv:3,tip:"Mandelblüte und Karneval.",warn:false},Mär:{icon:"🌸",temp:17,rain:40,humidity:60,wind:13,uv:5,tip:"Beginn der Frühlingssaison.",warn:false},Apr:{icon:"☀",temp:20,rain:35,humidity:55,wind:12,uv:6,tip:"Feria de Abril — magische Stimmung.",warn:false},Mai:{icon:"☀",temp:24,rain:20,humidity:48,wind:11,uv:8,tip:"Angenehm warm — ideal.",warn:false},Jun:{icon:"☀",temp:30,rain:5,humidity:38,wind:10,uv:10,tip:"Heiss — morgens und abends.",warn:true},Jul:{icon:"🔥",temp:36,rain:1,humidity:25,wind:9,uv:11,tip:"Extrem heiss — nur Indoor oder früh/abends.",warn:true},Aug:{icon:"🔥",temp:36,rain:2,humidity:26,wind:9,uv:10,tip:"Hochsommer — viele Einheimische weg.",warn:true},Sep:{icon:"☀",temp:30,rain:12,humidity:42,wind:10,uv:8,tip:"Warm und angenehmer als Sommer.",warn:false},Okt:{icon:"⛅",temp:23,rain:40,humidity:55,wind:12,uv:5,tip:"Bester Reisemonat.",warn:false},Nov:{icon:"🌦",temp:16,rain:55,humidity:65,wind:14,uv:3,tip:"Ruhige Saison.",warn:false},Dez:{icon:"🌧",temp:12,rain:65,humidity:72,wind:16,uv:2,tip:"Weihnachten in Sevilla.",warn:false}}};
+
+const ITINERARIES={Granada:[{day:1,title:"Alhambra & Albaicín",theme:"Das Herz der maurischen Vergangenheit",heat:false,stops:[{t:"08:30",n:"Alhambra — Frühticker",note:"Ticket vorab. Wenig Andrang früh.",hw:false},{t:"12:30",n:"Tapas: Bodega Castañeda",note:"Klassische Tapas nahe Kathedrale.",hw:false},{t:"14:30",n:"Siesta / Hotel",note:"Hitze meiden.",hw:true},{t:"17:00",n:"Bañuelo Arab Baths",note:"Verborgenes Juwel 11. Jh.",hw:false},{t:"18:30",n:"Albaicín → Mirador San Nicolás",note:"Pünktlich zum Sonnenuntergang.",hw:false},{t:"20:30",n:"Abendessen: Ruta del Azafrán",note:"Reservierung Pflicht.",hw:false}]},{day:2,title:"Sacromonte & Realejo",theme:"Flamenco, Gitanos und Tapas-Kultur",heat:true,stops:[{t:"09:00",n:"Kathedrale & Capilla Real",note:"Morgens kühl.",hw:false},{t:"11:00",n:"Calle Calderería Nueva",note:"Arabische Teeläden.",hw:false},{t:"13:00",n:"Tapas im Realejo",note:"Kostenlose Tapas-Tradition.",hw:false},{t:"15:00",n:"Siesta / Museo Cuevas del Sacromonte",note:"Museum klimatisiert.",hw:true},{t:"19:30",n:"Sacromonte Abendspaziergang",note:"Höhlenwohnungen erkunden.",hw:false},{t:"21:30",n:"Zambra Flamenco-Show",note:"Buchung über GetYourGuide.",hw:false}]}],Sevilla:[{day:1,title:"UNESCO-Kern & Santa Cruz",theme:"Alcázar, Kathedrale und die Altstadt",heat:false,stops:[{t:"09:30",n:"Real Alcázar",note:"Online-Ticket. Gärten zuerst.",hw:false},{t:"12:00",n:"Callejón del Agua",note:"Kühle versteckte Gasse.",hw:false},{t:"13:30",n:"Bodega Santa Cruz",note:"Steh-Bar — lokale Klassiker.",hw:false},{t:"16:00",n:"Kathedrale & Giralda",note:"Nachmittag — weniger Gruppen.",hw:true},{t:"18:30",n:"Metropol Parasol",note:"Goldene Stunde Panorama.",hw:false},{t:"21:00",n:"El Rinconcillo (1670)",note:"Historisches Ambiente — Cash!",hw:false}]},{day:2,title:"Triana & Guadalquivir",theme:"Töpfer, Flamenco und Markt",heat:true,stops:[{t:"09:00",n:"Mercado de Triana",note:"Frühstück unter Einheimischen.",hw:false},{t:"10:30",n:"Töpferei-Ateliers Calle Alfarería",note:"Handgemachte Azulejos.",hw:false},{t:"12:30",n:"Calle Betis Mittagessen",note:"Tapas mit Guadalquivir-Blick.",hw:false},{t:"15:00",n:"Siesta / Centro Arte Contemporáneo",note:"Klimatisiert.",hw:true},{t:"18:30",n:"Flamenco im Fosforito",note:"Weniger touristisch.",hw:false},{t:"20:30",n:"EME-Dachterrasse",note:"Panorama-Drinks.",hw:false}]}]};
+
+let S={city:'Granada',view:'explore',sub:'cards',cat:'all',dist:null,price:null,filters:{gem:false,family:false,evening:false,indoor:false,outdoor:false},favs:new Set(),search:'',detail:null,weatherMonth:'Jul',planDays:{1:[],2:[]},scraperProgress:{}};
+try{const sv=localStorage.getItem('anda_favs');if(sv)S.favs=new Set(JSON.parse(sv))}catch(e){}
+try{const sp=localStorage.getItem('anda_plan');if(sp)S.planDays=JSON.parse(sp)}catch(e){}
+function saveFavs(){try{localStorage.setItem('anda_favs',JSON.stringify([...S.favs]))}catch(e){}}
+function savePlan(){try{localStorage.setItem('anda_plan',JSON.stringify(S.planDays))}catch(e){}}
+function switchCity(c){S.city=c;S.dist=null;S.cat='all';S.search='';S.detail=null;document.getElementById('sinput').value='';document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('active',b.textContent===c));updateDistricts();updateCounts();render()}
+function nav(v){S.view=v;S.detail=null;document.querySelectorAll('.nbtn').forEach(b=>b.classList.toggle('active',b.id==='n-'+v));render()}
+function setCat(c){S.cat=c;document.querySelectorAll('[id^="cat-"]').forEach(e=>e.classList.remove('active'));document.getElementById('cat-'+c)?.classList.add('active');render()}
+function setDist(d){S.dist=S.dist===d?null:d;updateDistricts();render()}
+function setPrice(p){S.price=S.price===p?null:p;document.querySelectorAll('[id^="p-"]').forEach(e=>e.classList.remove('active'));if(S.price){const m={'kostenlos':'p-kos','€':'p-e','€€':'p-ee','€€€':'p-eee'};document.getElementById(m[p])?.classList.add('active')}render()}
+function tgl(f){S.filters[f]=!S.filters[f];document.getElementById('tg-'+f)?.classList.toggle('on',S.filters[f]);render()}
+function handleSearch(v){S.search=v.toLowerCase();render()}
+function toggleFav(id,ev){if(ev)ev.stopPropagation();S.favs.has(id)?S.favs.delete(id):S.favs.add(id);saveFavs();render()}
+function showDetail(id){S.detail=id;render()}
+function setWeatherMonth(m){S.weatherMonth=m;render()}
+function getFiltered(){let items=DATA[S.city]||[];if(S.cat!=='all')items=items.filter(i=>i.category===S.cat);if(S.dist)items=items.filter(i=>i.district===S.dist);if(S.price)items=items.filter(i=>i.price===S.price);if(S.filters.gem)items=items.filter(i=>i.gem);if(S.filters.family)items=items.filter(i=>i.family);if(S.filters.evening)items=items.filter(i=>i.evening);if(S.filters.indoor)items=items.filter(i=>i.indoor);if(S.filters.outdoor)items=items.filter(i=>i.outdoor);if(S.search)items=items.filter(i=>i.name.toLowerCase().includes(S.search)||i.short.toLowerCase().includes(S.search)||i.tags.some(t=>t.includes(S.search)));return items}
+function catColor(c){return{sehenswürdigkeit:'#C4622D',restaurant:'#C4922D',hotel:'#5C6B2C',aktivität:'#2C6B5C',hidden_gem:'#6B2C5C'}[c]||'#888'}
+function catBg(c){return{sehenswürdigkeit:'#FBE8D8',restaurant:'#FBF2D8',hotel:'#E8EDDA',aktivität:'#D8EDEA',hidden_gem:'#EDD8ED'}[c]||'#EEE'}
+function updateDistricts(){const districts=[...new Set((DATA[S.city]||[]).map(i=>i.district))];const el=document.getElementById('district-list');if(el)el.innerHTML=districts.map(d=>`<div class="fc${S.dist===d?' active':''}" onclick="setDist('${d}')">${d}</div>`).join('')}
+function updateCounts(){const all=DATA[S.city]||[];document.getElementById('cnt-all')&&(document.getElementById('cnt-all').textContent=all.length);[['sehenswürdigkeit','cnt-sehensw'],['restaurant','cnt-rest'],['hotel','cnt-hotel'],['aktivität','cnt-akt'],['hidden_gem','cnt-gem']].forEach(([c,id])=>{const el=document.getElementById(id);if(el)el.textContent=all.filter(i=>i.category===c).length})}
+let leafletMap=null;
+function initMap(items){setTimeout(()=>{const container=document.getElementById('leaflet-map');if(!container||typeof L==='undefined')return;const center=S.city==='Granada'?[37.1760,-3.5881]:[37.3838,-5.9907];if(leafletMap){leafletMap.remove();leafletMap=null}leafletMap=L.map('leaflet-map').setView(center,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(leafletMap);items.forEach(item=>{const marker=L.marker([item.lat,item.lng]);marker.bindPopup(`<div style="font-family:sans-serif;min-width:160px"><div style="font-size:24px">${item.emoji}</div><b style="font-size:14px">${item.name}</b><br><span style="font-size:11px;color:#888">${item.district} · ${item.price}</span><br><span style="font-size:12px">${item.short}</span></div>`);marker.addTo(leafletMap)})},100)}
+let dragSrc=null;
+function onDragStart(ev,id,day){dragSrc={id,day};ev.dataTransfer.effectAllowed='move'}
+function onDragOver(ev){ev.preventDefault()}
+function onDrop(ev,targetDay){ev.preventDefault();if(!dragSrc)return;const{id,day:srcDay}=dragSrc;if(S.planDays[srcDay])S.planDays[srcDay]=S.planDays[srcDay].filter(x=>x!==id);if(!S.planDays[targetDay])S.planDays[targetDay]=[];if(!S.planDays[targetDay].includes(id))S.planDays[targetDay].push(id);dragSrc=null;savePlan();render()}
+function removeFromPlan(id,day){S.planDays[day]=S.planDays[day].filter(x=>x!==id);savePlan();render()}
+function addToPlan(id,day){if(!S.planDays[day])S.planDays[day]=[];if(!S.planDays[day].includes(id))S.planDays[day].push(id);savePlan();render()}
+function levenshtein(a,b){const m=a.length,n=b.length;const dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);for(let j=0;j<=n;j++)dp[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);return dp[m][n]}
+function similarity(a,b){const maxL=Math.max(a.length,b.length);return maxL===0?1:(1-levenshtein(a.toLowerCase(),b.toLowerCase())/maxL)}
+function srcBadge(type){const map={'official venue':['#E8F4E8','#2A6B2A'],'official tourism':['#E8F4E8','#2A6B2A'],'booking platform':['#E8F0FB','#1B4E9B'],'editorial travel guide':['#FBF0E8','#8B4A10'],'restaurant guide':['#F9E8FB','#6B1B8B'],'hotel guide':['#E8FBFB','#0F6060'],'hotel platform':['#E8FBFB','#0F6060'],'review platform':['#FBFBE8','#6B6B0F']};const[bg,col]=map[type]||['#EEE','#555'];return`<span class="sb" style="background:${bg};color:${col}">${type}</span>`}
+function renderCards(items){if(!items.length)return`<div class="empty"><div class="ei">🔍</div>Keine Einträge — Filter anpassen.</div>`;return`<div class="cgrid">${items.map(i=>`<div class="pc" onclick="showDetail('${i.id}')"><div class="ci" style="background:${catBg(i.category)}">${i.emoji}</div><div class="cb"><div class="ccat" style="color:${catColor(i.category)}">${i.category.replace('_',' ')}</div><div class="cnm">${i.name}</div><div class="cdsc">${i.short}</div><div class="cmeta"><span class="tag tp">${i.price}</span><span class="tag td">${i.district}</span>${i.gem?'<span class="tag tg">✦ Gem</span>':''}<button class="fb" onclick="toggleFav('${i.id}',event)">${S.favs.has(i.id)?'♥':'♡'}</button></div></div></div>`).join('')}</div>`}
+function renderList(items){if(!items.length)return`<div class="empty"><div class="ei">🔍</div>Keine Einträge.</div>`;return items.map(i=>`<div class="li" onclick="showDetail('${i.id}')"><div class="le">${i.emoji}</div><div class="lc"><div class="ln">${i.name}</div><div class="ld">${i.short}</div></div><div class="lm"><span class="tag tp">${i.price}</span>${i.gem?'<span class="tag tg">Gem</span>':''}<button class="fb" onclick="toggleFav('${i.id}',event)">${S.favs.has(i.id)?'♥':'♡'}</button></div></div>`).join('')}
+function renderDetail(id){const i=[...DATA.Granada,...DATA.Sevilla].find(x=>x.id===id);if(!i)return'';return`<div class="dp"><div class="dbk" onclick="S.detail=null;render()">← Zurück</div><div class="dhero"><div class="dhi" style="background:${catBg(i.category)}">${i.emoji}</div><div class="dhb"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px"><span style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:${catColor(i.category)}">${i.category.replace('_',' ')}</span><span style="font-size:11px;color:var(--muted)">· ${i.city} · ${i.district}</span></div><div class="dtit">${i.name}</div><div class="dtags"><span class="tag tp">${i.price}</span>${i.gem?'<span class="tag tg">✦ Hidden Gem</span>':''}${i.booking?'<span class="tag" style="background:#FBEAEA;color:#8B1A1A">Buchung nötig</span>':''}${i.tags.slice(0,4).map(t=>`<span class="tag" style="background:rgba(0,0,0,.05);color:var(--muted)">${t}</span>`).join('')}</div><div class="ddsc">${i.long}</div><div class="dgrd"><div class="df"><div class="dfl">Dauer</div><div class="dfv">${i.duration}</div></div><div class="df"><div class="dfl">Öffnungszeiten</div><div class="dfv" style="font-size:11px">${i.hours}</div></div><div class="df"><div class="dfl">Beste Zeit</div><div class="dfv">${i.best}</div></div><div class="df"><div class="dfl">Koordinaten</div><div class="dfv" style="font-size:11px">${i.lat}°N</div></div></div>${i.note?`<div style="background:var(--goldl);border-radius:7px;padding:9px 12px;font-size:12px;color:var(--gold);margin-bottom:12px"><span style="font-weight:500">💡 Tipp:</span> ${i.note}</div>`:''}<div class="cfb"><span>Quellenvertrauen</span><div class="cft"><div class="cff" style="width:${Math.round(i.conf*100)}%"></div></div><span>${Math.round(i.conf*100)}%</span></div></div></div><div style="background:var(--white);border-radius:11px;border:1px solid var(--border);padding:14px 18px;margin-bottom:12px"><div class="fl" style="margin-bottom:10px">Quellen</div><div class="srcl">${i.sources.map(s=>`<div class="si">${srcBadge(s.type)}<a href="${s.url}" style="color:var(--tc);font-size:11px;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${s.url.replace('https://','').split('/')[0]}</a><span class="conf">${Math.round(s.conf*100)}%</span></div>`).join('')}</div></div>${i.booking_urls&&i.booking_urls.length?`<div class="bkrow">${i.booking_urls.map(b=>`<a href="${b.url}" class="bkbtn ${b.type}" target="_blank">${b.label} ↗</a>`).join('')}</div>`:''}<div style="display:flex;gap:7px;margin-top:10px"><button class="bkbtn primary" onclick="toggleFav('${i.id}',event)">${S.favs.has(i.id)?'♥ Aus Favoriten':'♡ Zu Favoriten'}</button><button class="bkbtn ghost" onclick="addToPlan('${i.id}',1);nav('planner')">+ Tagesplan Tag 1</button><button class="bkbtn ghost" onclick="addToPlan('${i.id}',2);nav('planner')">+ Tag 2</button></div></div>`}
+function render(){
+  const main=document.getElementById('main');if(!main)return;
+  let html='<div class="va">';
+  if(S.detail){html+=renderDetail(S.detail)}
+  else if(S.view==='explore'){
+    const items=getFiltered();
+    html+=`<div class="shdr"><div><div class="stit">${S.city} entdecken</div></div><div style="display:flex;align-items:center;gap:7px"><span class="scnt">${items.length} Einträge</span><div class="vt"><button class="vtb${S.sub==='cards'?' active':''}" onclick="S.sub='cards';render()">⊞</button><button class="vtb${S.sub==='list'?' active':''}" onclick="S.sub='list';render()">☰</button><button class="vtb${S.sub==='map'?' active':''}" onclick="S.sub='map';render()">◎</button></div></div></div>`;
+    if(S.sub==='cards')html+=renderCards(items);
+    else if(S.sub==='list')html+=renderList(items);
+    else{html+=`<div id="leaflet-map"></div>`;setTimeout(()=>initMap(items),50)}
+  }
+  else if(S.view==='map'){const items=getFiltered();html+=`<div class="shdr"><div class="stit">${S.city} — Karte</div><span class="scnt">${items.length} Pins</span></div><div id="leaflet-map"></div>`;setTimeout(()=>initMap(items),50)}
+  else if(S.view==='planner'){
+    const allItems=DATA[S.city]||[];const usedIds=new Set([...(S.planDays[1]||[]),...(S.planDays[2]||[])]);const available=allItems.filter(i=>!usedIds.has(i.id));
+    html+=`<div class="shdr"><div class="stit">${S.city} — Tagesplaner</div><button class="bkbtn ghost" onclick="S.planDays={1:[],2:[]};savePlan();render()" style="font-size:11px">Zurücksetzen</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">`;
+    [1,2].forEach(day=>{const dayItems=(S.planDays[day]||[]).map(id=>allItems.find(i=>i.id===id)).filter(Boolean);html+=`<div><div style="font-weight:500;font-size:13px;margin-bottom:8px;color:var(--tc)">Tag ${day}</div><div class="dnd-zone" ondragover="onDragOver(event)" ondrop="onDrop(event,${day})">${dayItems.length===0?'<div class="dnd-zone-label">Hierher ziehen</div>':''}${dayItems.map(item=>`<div class="dnd-item" draggable="true" ondragstart="onDragStart(event,'${item.id}',${day})"><span class="dnd-handle">⣿</span><span style="font-size:16px">${item.emoji}</span><span class="dnd-name">${item.name}</span><span class="tag tp">${item.price}</span><button class="dnd-remove" onclick="removeFromPlan('${item.id}',${day})">✕</button></div>`).join('')}</div></div>`});
+    html+=`</div><div style="background:var(--white);border-radius:11px;border:1px solid var(--border);padding:14px 18px"><div class="fl" style="margin-bottom:10px">Orte hinzufügen</div><div class="dnd-add-row">${available.map(i=>`<div style="display:flex;align-items:center;gap:3px"><div class="add-chip" onclick="addToPlan('${i.id}',1)">${i.emoji} ${i.name} → T1</div><div class="add-chip" onclick="addToPlan('${i.id}',2)">T2</div></div>`).join('')}${available.length===0?'<div style="font-size:12px;color:var(--muted)">Alle Orte verplant ✓</div>':''}</div></div>`;
+  }
+  else if(S.view==='weather'){
+    const months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];const m=S.weatherMonth;const wx=(WEATHER[S.city]||{})[m]||{};
+    html+=`<div class="shdr"><div class="stit">${S.city} — Wetter & Reisezeit</div></div><div class="msel">${months.map(mo=>`<div class="mchip${S.weatherMonth===mo?' active':''}" onclick="setWeatherMonth('${mo}')">${mo}</div>`).join('')}</div><div class="wx-card"><div class="wx-main"><div class="wx-icon">${wx.icon||'☁'}</div><div><div class="wx-temp">${wx.temp||'—'}°C</div><div class="wx-desc">${S.city} im ${m}</div></div></div><div class="wx-grid"><div class="wx-item"><div class="wx-val">${wx.rain||0}mm</div><div class="wx-lbl">Regen</div></div><div class="wx-item"><div class="wx-val">${wx.humidity||0}%</div><div class="wx-lbl">Feuchte</div></div><div class="wx-item"><div class="wx-val">${wx.wind||0}km/h</div><div class="wx-lbl">Wind</div></div><div class="wx-item"><div class="wx-val">UV ${wx.uv||0}</div><div class="wx-lbl">UV-Index</div></div></div>${wx.warn?`<div class="wx-warn">☀️ Hitzestrategie: Outdoor nur 6–11 Uhr und ab 18 Uhr. Siesta 14–17 Uhr. Min. 2L Wasser.</div>`:''}${wx.tip?`<div style="background:var(--olivl);border-radius:7px;padding:7px 12px;font-size:12px;color:var(--olive);width:100%">🌿 ${wx.tip}</div>`:''}</div><div style="background:var(--white);border-radius:11px;border:1px solid var(--border);padding:14px 18px;margin-top:14px"><div class="fl" style="margin-bottom:10px">Temperaturübersicht</div><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px">${months.map(mo=>{const d=(WEATHER[S.city]||{})[mo]||{};const h=Math.max(4,Math.min(40,d.temp||10));return`<div style="text-align:center;cursor:pointer" onclick="setWeatherMonth('${mo}')"><div style="height:${h}px;background:${d.warn?'#C4622D':'#C4922D'};border-radius:2px 2px 0 0;opacity:${mo===S.weatherMonth?1:.5}"></div><div style="font-size:9px;color:var(--muted);margin-top:2px">${mo}</div></div>`}).join('')}</div></div>`;
+  }
+  else if(S.view==='itinerary'){
+    const days=ITINERARIES[S.city]||[];
+    html+=`<div class="shdr"><div class="stit">${S.city} — Kuratierte Itineraries</div></div>${days.map(d=>`<div class="iday"><div class="idh"><div class="idn">${d.day}</div><div><div class="idtit">${d.title}</div><div class="idthm">${d.theme}</div></div><span class="hbdg ${d.heat?'hw':'hok'}" style="margin-left:auto">${d.heat?'☀️ Hitze':'✓ Optimiert'}</span></div><div class="idb">${d.stops.map(s=>`<div class="ti"><div class="ttm">${s.t}</div><div class="tdot"></div><div class="tc2"><div class="tn">${s.n}${s.hw?' <span class="hbdg hw">☀️</span>':''}</div><div class="tnt">${s.note}</div></div></div>`).join('')}</div></div>`).join('')}`;
+  }
+  else if(S.view==='scraper'){
+    html+=`<div class="shdr"><div class="stit">${S.city} — Quellen</div></div><div class="scraper-panel"><div class="sp-title">Datenquellen-Manager</div><div class="sp-desc">Alle Seed-Quellen für ${S.city}. Python-Scraper über Prompt-Export generieren.</div>`;
+    const sources=[{url:"https://worldonabudget.de/granada-sehenswuerdigkeiten/",type:"editorial travel guide",city:"Granada"},{url:"https://travelsaroundspain.com/granada-hidden-gems/",type:"editorial travel guide",city:"Granada"},{url:"https://www.getyourguide.com/de-ch/granada-l207/",type:"booking platform",city:"Granada"},{url:"https://www.tripadvisor.com/HotelsList-Granada-Boutique-Hotels-zfp1542.html",type:"hotel platform",city:"Granada"},{url:"https://ferndurst.de/sevilla-geheimtipps-reisebericht/",type:"editorial travel guide",city:"Sevilla"},{url:"https://spanishsabores.com/eating-in-seville/",type:"restaurant guide",city:"Sevilla"},{url:"https://andalucialovers.com/en/best-restaurants-sevilla-where-eat-reviews/",type:"restaurant guide",city:"Sevilla"},{url:"https://thebetterbeyond.com/boutique-hotel-seville/",type:"hotel guide",city:"Sevilla"}];
+    sources.filter(s=>s.city===S.city).forEach(s=>{const p=S.scraperProgress[s.url]||0;html+=`<div class="src-row"><span style="font-size:12px;color:#5DCAA5">✓</span><div class="src-url">${s.url.replace('https://','')}</div>${srcBadge(s.type)}${p>0&&p<100?`<div class="prog-bar" style="max-width:60px"><div class="prog-fill" style="width:${p}%"></div></div>`:`<button class="src-btn" onclick="simulateScrape('${s.url}')">Scrapen</button>`}</div>`});
+    html+=`<div style="margin-top:12px"><button class="src-btn" style="width:100%;padding:8px" onclick="nav('prompt')">↗ Python-Scraper generieren</button></div></div>`;
+  }
+  else if(S.view==='dupes'){
+    const all=[...DATA.Granada,...DATA.Sevilla];const dupes=[];for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){const s=similarity(all[i].name,all[j].name);if(s>0.65)dupes.push({a:all[i],b:all[j],score:Math.round(s*100)})}
+    html+=`<div class="shdr"><div class="stit">Duplikat-Erkennung</div><span class="scnt">${dupes.length} gefunden</span></div>${dupes.length===0?`<div class="empty"><div class="ei">✓</div>Keine Duplikate — Datenbank sauber.</div>`:''}${dupes.map(d=>`<div class="dupe-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="dupe-score">${d.score}%</div><div><div style="font-size:12px;font-weight:500;color:#856404">Ähnlichkeit erkannt</div></div></div><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">${[d.a,d.b].map(x=>`<div style="background:var(--sand);border-radius:6px;padding:8px 10px"><div style="font-size:16px">${x.emoji}</div><div style="font-weight:500;font-size:12px">${x.name}</div><div style="font-size:11px;color:var(--muted)">${x.city} · ${x.district}</div></div>`).join('<div style="font-size:18px;color:var(--muted);text-align:center">≈</div>')}</div></div>`).join('')}`;
+  }
+  else if(S.view==='prompt'){
+    const templates=[{icon:'🔍',t:'Neue Quellen',d:`Neue ${S.city}-Einträge im JSON-Format.`,p:`Recherchiere 5 neue Einträge für ${S.city} im JSON-Format: {id, name, city, district, category, tags[], short, long, price, duration, hours, booking, best, gem, family, evening, indoor, outdoor, lat, lng, url, booking_urls[], sources[], conf, note, emoji}`},{icon:'📅',t:'Itinerary optimieren',d:`3-Tage-Plan für ${S.city} mit Hitzestrategie.`,p:`Optimiere einen 3-Tage-Plan für ${S.city} im Sommer. Hitzestrategie: Outdoor nur morgens und abends. Siesta 14–17 Uhr einplanen.`},{icon:'🐍',t:'Python-Scraper',d:'Produktionsreifer Scraper + JSON-Export.',p:`Erstelle einen Python-Scraper mit requests+BeautifulSoup für diese ${S.city}-Quellen. Rate-Limiting 1–2s. JSON-Export mit Schema: {name, city, district, category, short_description, price_level, estimated_duration, opening_hours, booking_required, coordinates, source_url, confidence_score}`},{icon:'🗺️',t:'Leaflet erweitern',d:'Cluster-Marker + Kategorie-Filter.',p:`Erweitere das Leaflet.js-Kartenmodul: (1) Marker-Clustering, (2) Layer-Steuerung nach Kategorie, (3) Custom-Emoji-Icons, (4) Popup mit Buchungs-Button. Koordinaten-Format: {lat, lng}`},{icon:'🌤',t:'Wetter-API',d:'OpenWeatherMap Echtzeit-Integration.',p:`Integriere OpenWeatherMap API für ${S.city}. Echtzeit-Temperatur, 7-Tage-Forecast, UV-Index. Automatische Hitzestrategie-Warnung wenn Tmax > 32°C. Cache 1h TTL.`},{icon:'📱',t:'PWA / iPhone',d:'Service Worker + Manifest für Home-Screen.',p:`Konvertiere die App in eine PWA für iPhone: Web App Manifest, Service Worker mit Cache-First, Offline-Fallback mit localStorage, Add-to-Home-Screen Prompt. iOS Safari Einschränkungen beachten.`}];
+    html+=`<div class="shdr"><div class="stit">Prompt-Export</div></div><div class="scraper-panel"><div class="sp-title">Erweiterungs-Prompts</div><div class="sp-desc">Klicken zum Kopieren oder direkt an Claude senden.</div><div class="pt-grid">${templates.map(t=>`<div class="ptc" onclick="navigator.clipboard.writeText(${JSON.stringify(t.p)}).then(()=>alert('Prompt kopiert!'))"><div class="pti">${t.icon}</div><div class="ptt">${t.t}</div><div class="ptd">${t.d}</div></div>`).join('')}</div></div>`;
+  }
+  else if(S.view==='favorites'){
+    const items=[...DATA.Granada,...DATA.Sevilla].filter(i=>S.favs.has(i.id));
+    html+=`<div class="shdr"><div class="stit">Meine Favoriten</div><span class="scnt">${items.length} Orte</span></div>`;
+    html+=items.length?renderCards(items):`<div class="empty"><div class="ei">♡</div>Noch keine Favoriten.<br><small>♡-Symbol auf einer Karte anklicken.</small></div>`;
+  }
+  html+='</div>';
+  main.innerHTML=html;
+}
+function simulateScrape(url){S.scraperProgress[url]=10;render();let p=10;const iv=setInterval(()=>{p+=Math.floor(Math.random()*20)+5;S.scraperProgress[url]=Math.min(p,100);if(p>=100)clearInterval(iv);render()},400)}
+updateDistricts();updateCounts();render();
+</script>
+</body>
+</html>
